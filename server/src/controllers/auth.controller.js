@@ -47,7 +47,7 @@ export const registerUser = async (req, res) => {
 };
 
 // @description     Login the user & get token
-// @route           POST /api/user/login
+// @route           POST /api/auth/login
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -83,7 +83,7 @@ export const loginUser = async (req, res) => {
 };
 
 // @description     Get or Search all users (for starting a chat)
-// @route           GET /api/user?search=john
+// @route           GET /api/auth?search=john
 export const allUsers = async (req, res) => {
     try {
         const keyword = req.query.search

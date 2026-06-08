@@ -49,6 +49,15 @@ const initializeSocketServer = (httpServer) => {
             });
         })
 
+        // 5. READ RECIEPT: Notify the sender that their message is read
+        socket.on("message read", (readData) => {
+            let chat = readData.chat;
+
+            if(!chat.users) return
+
+            socket.in(readData.sender._id).emit("reciept updated", readData)
+        })
+
 
         socket.on("disconnect", () => {
             console.log("User disconnected : ",socket.id);

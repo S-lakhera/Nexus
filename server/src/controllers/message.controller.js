@@ -53,3 +53,28 @@ export const allMessages = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// @description     Mark a message as read by the current user
+// @route           PUT /api/message/read
+export const markMessageAsRead = async (req, res) => {
+  const { messageId } = req.body;
+
+  if (!messageId) {
+    return res.status(400).json({ message: "messageId required" });
+  }
+
+  try {
+    const updatedMessage = await Message.findByIdAndUpdate(
+      messageId,
+      { $addToSet: { readBy: req.user._id } },
+      { new: true }
+    )
+      .populate("sender", "name pic email")
+      .populate("chat")
+      .populate("readBy", "name pic email");
+
+    res.json(updatedMessage);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};

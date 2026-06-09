@@ -14,3 +14,8 @@ export const logoutUserAPI = async () => {
     const res = await API.post("/auth/logout")
     return res.data;
 }
+
+export const searchUsersAPI = async (keyword) => {
+  const response = await API.get(`/auth/search?search=${keyword}`);
+  return response.data;
+};

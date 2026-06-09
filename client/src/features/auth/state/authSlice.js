@@ -37,10 +37,10 @@ const authSlice = createSlice({
         },
         logout: (state) => {
             state.user = null,
-                state.accessToken = null,
-                state.error = null,
-                state.isLoading = false,
-                localStorage.removeItem("nexusUser")
+            state.accessToken = null,
+            state.error = null,
+            state.isLoading = false,
+            localStorage.removeItem("nexusUser")
         }
     }
 })

@@ -1,13 +1,28 @@
-import { useEffect } from "react";
-import { Search, MoreVertical, Plus, CheckCheck, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Search, MoreVertical, Plus, CheckCheck, Check, LogOut, Settings } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat.js";
 
 export default function ChatSidebar() {
   const { user } = useSelector((state) => state.auth);
   
-  // Pull our data and actions directly from the custom hook
-  const { chats, loadChats, openChat, selectedChat, isLoadingChats } = useChat();
+  // Pull handleLogout from our updated hook!
+  const { chats, loadChats, openChat, selectedChat, isLoadingChats, handleLogout } = useChat();
+
+  // Settings Menu State
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu automatically if user clicks outside of the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Fire off the API call the second the sidebar renders
   useEffect(() => {
@@ -15,7 +30,6 @@ export default function ChatSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Utility to extract the correct user details for 1-on-1 chats
   const getOtherUser = (users) => {
     if (!users || users.length === 0) return null;
     return users.find((u) => u._id !== user?._id) || users[0];
@@ -40,9 +54,45 @@ export default function ChatSidebar() {
             <p className="text-xs font-semibold uppercase tracking-widest text-accent font-jetbrains">Online</p>
           </div>
         </div>
-        <button className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-primary">
-          <MoreVertical size={20} />
-        </button>
+        
+        {/* MODIFIED: Settings Dropdown wrapper */}
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {/* The Dropdown Menu Box */}
+          {isMenuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-border bg-secondary shadow-xl shadow-black/50">
+              <button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  console.log("Future: Open Theme/Font Modal");
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary"
+              >
+                <Settings size={16} className="text-zinc-400" />
+                Preferences
+              </button>
+              
+              <div className="h-px w-full bg-border"></div>
+              
+              <button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleLogout(); // Fire the hook function
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 transition-colors hover:bg-primary"
+              >
+                <LogOut size={16} />
+                Disconnect
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 2. Search Section */}
@@ -76,12 +126,10 @@ export default function ChatSidebar() {
             return (
               <div 
                 key={chat._id} 
-                onClick={() => openChat(chat)} // Triggers Redux selection & API fetch for messages
+                onClick={() => openChat(chat)} 
                 className={`group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-all hover:bg-secondary ${isSelected ? 'bg-secondary ring-1 ring-border' : ''}`}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  
-                  {/* Avatar */}
                   <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-zinc-300 font-space ring-1 ring-border">
                     {chat.isGroupChat ? (
                       chatName.substring(0, 2).toUpperCase()
@@ -89,14 +137,11 @@ export default function ChatSidebar() {
                       <img src={otherUser?.pic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chatName}`} alt={chatName} className="h-full w-full rounded-full" />
                     )}
                   </div>
-
-                  {/* Message Details */}
                   <div className="flex flex-col justify-center overflow-hidden">
                     <h3 className="truncate text-sm font-semibold font-jakarta text-primary">{chatName}</h3>
                     <div className="flex items-center gap-1">
                       {chat.latestMessage && (
                         <p className="truncate text-xs text-zinc-500 font-jakarta">
-                          {/* If the latest message was sent by the logged in user, add a "You: " prefix */}
                           {chat.latestMessage.sender === user?._id ? "You: " : ""}
                           {chat.latestMessage.content}
                         </p>

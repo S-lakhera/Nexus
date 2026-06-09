@@ -20,6 +20,8 @@ import {
   sendMessageAPI,
 } from "../api/chat.api.js";
 import { useEffect } from "react";
+import { logoutUserAPI } from "../../auth/api/auth.api.js";
+import { logout } from "../../auth/state/authSlice.js";
 
 export const useChat = () => {
   const dispatch = useDispatch();
@@ -143,6 +145,17 @@ export const useChat = () => {
     }
   };
 
+  // Logout logic
+  const handleLogout = async () => {
+    try {
+      await logoutUserAPI();
+      
+      dispatch(logout()); 
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return {
     // State
     chats,
@@ -155,5 +168,6 @@ export const useChat = () => {
     openChat,
     createOrOpenChat,
     sendNewMessage,
+    handleLogout
   };
 };

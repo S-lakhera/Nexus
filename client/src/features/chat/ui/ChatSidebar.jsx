@@ -2,16 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { Search, MoreVertical, Plus, Settings, LogOut } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat.js";
+import GroupChatModal from "./GroupChatModal.jsx";
 
 export default function ChatSidebar() {
   const { user } = useSelector((state) => state.auth);
-  
-  const { 
-    chats, 
-    loadChats, 
-    openChat, 
-    selectedChat, 
-    isLoadingChats, 
+
+  const {
+    chats,
+    loadChats,
+    openChat,
+    selectedChat,
+    isLoadingChats,
     handleLogout,
     createOrOpenChat,
     searchQuery,
@@ -22,6 +23,7 @@ export default function ChatSidebar() {
 
   // --- LOCAL DOM STATE (UI Only) ---
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -44,14 +46,14 @@ export default function ChatSidebar() {
 
   return (
     <div className="flex h-screen w-full flex-col border-r border-border bg-primary transition-all md:w-87.5 lg:w-100">
-      
+
       {/* 1. Header Section */}
       <div className="flex items-center justify-between p-5">
         <div className="flex items-center gap-3">
           <div className="relative h-10 w-10 rounded-full bg-secondary ring-2 ring-border">
-            <img 
-              src={user?.pic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Felix'}`} 
-              alt="Profile" 
+            <img
+              src={user?.pic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Felix'}`}
+              alt="Profile"
               className="h-full w-full rounded-full object-cover"
             />
             <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-primary bg-green-500"></div>
@@ -61,9 +63,9 @@ export default function ChatSidebar() {
             <p className="text-xs font-semibold uppercase tracking-widest text-accent font-jetbrains">Online</p>
           </div>
         </div>
-        
+
         <div className="relative" ref={menuRef}>
-          <button 
+          <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-primary focus:outline-none focus:ring-1 focus:ring-accent"
           >
@@ -72,7 +74,7 @@ export default function ChatSidebar() {
 
           {isMenuOpen && (
             <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-border bg-secondary shadow-xl shadow-black/50">
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(false)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary"
               >
@@ -80,7 +82,7 @@ export default function ChatSidebar() {
                 Preferences
               </button>
               <div className="h-px w-full bg-border"></div>
-              <button 
+              <button
                 onClick={() => { setIsMenuOpen(false); handleLogout(); }}
                 className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 transition-colors hover:bg-primary"
               >
@@ -119,9 +121,9 @@ export default function ChatSidebar() {
             </div>
           ) : (
             searchResults.map((searchedUser) => (
-              <div 
-                key={searchedUser._id} 
-                onClick={() => createOrOpenChat(searchedUser._id)} 
+              <div
+                key={searchedUser._id}
+                onClick={() => createOrOpenChat(searchedUser._id)}
                 className="group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-all hover:bg-secondary"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
@@ -152,9 +154,9 @@ export default function ChatSidebar() {
               const isSelected = selectedChat?._id === chat._id;
 
               return (
-                <div 
-                  key={chat._id} 
-                  onClick={() => openChat(chat)} 
+                <div
+                  key={chat._id}
+                  onClick={() => openChat(chat)}
                   className={`group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-all hover:bg-secondary ${isSelected ? 'bg-secondary ring-1 ring-border' : ''}`}
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
@@ -183,6 +185,24 @@ export default function ChatSidebar() {
           )
         )}
       </div>
+
+      {/* 4. Bottom Action */}
+      <div className="border-t border-border p-5">
+        <button
+          onClick={() => setIsGroupModalOpen(true)} // 3. Wire the click event
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-all hover:opacity-90 active:scale-95 font-space"
+        >
+          <Plus size={18} />
+          New Group Chat
+        </button>
+      </div>
+
+      {/* 5. Mount the Modal Component */}
+      <GroupChatModal
+        isOpen={isGroupModalOpen}
+        onClose={() => setIsGroupModalOpen(false)}
+      />
+
     </div>
   );
 }

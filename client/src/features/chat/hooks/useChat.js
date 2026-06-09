@@ -19,6 +19,7 @@ import {
   accessChatAPI,
   fetchMessagesAPI,
   sendMessageAPI,
+  createGroupChatAPI,
 } from "../api/chat.api.js";
 import { logoutUserAPI, searchUsersAPI } from "../../auth/api/auth.api.js"; // Added search API
 import { logout } from "../../auth/state/authSlice.js";
@@ -147,20 +148,39 @@ export const useChat = () => {
     }
   };
 
+  // Create a Group Chat 
+  const createNewGroupChat = async (name, selectedUserIds) => {
+    try {
+      const newGroup = await createGroupChatAPI(name, selectedUserIds);
+      
+      await loadChats(); 
+      
+      // Instantly open the newly created group in the Chat Window
+      dispatch(setSelectedChat(newGroup)); 
+      
+      return true; // Return true so the UI knows it can close the modal
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      return false; 
+    }
+  };
+
+
   return {
     chats,
     selectedChat,
     messages,
     isLoadingChats,
     isLoadingMessages,
-    searchQuery,         // EXPOSED
-    setSearchQuery,      // EXPOSED
-    searchResults,       // EXPOSED
-    isSearchLoading,     // EXPOSED
+    searchQuery,       
+    setSearchQuery,      
+    searchResults,       
+    isSearchLoading,     
     loadChats,
     openChat,
     createOrOpenChat,
     sendNewMessage,
     handleLogout,
+    createNewGroupChat
   };
 };

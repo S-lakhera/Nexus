@@ -30,3 +30,12 @@ export const sendMessageAPI = async (chatId, content) => {
   });
   return response.data;
 };
+
+// Create a new multi-user group chat
+export const createGroupChatAPI = async (name, users) => {
+  const response = await API.post("/chat/group", {
+    name,
+    users,
+  });
+  return response.data;
+};

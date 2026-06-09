@@ -127,7 +127,7 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
       </div>
 
       {/* MESSAGE LOG */}
-      <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
         {isLoadingMessages ? (
           <div className="flex h-full items-center justify-center">
              <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>

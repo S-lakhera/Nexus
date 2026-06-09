@@ -4,13 +4,7 @@ import { useSelector } from "react-redux";
 // Import your UI Components
 import LoginPage from "../features/auth/ui/LoginPage.jsx";
 import SignupPage from "../features/auth/ui/SignupPage.jsx";
-
-// A temporary placeholder for our next phase
-const DashboardPlaceholder = () => (
-  <div className="flex min-h-screen items-center justify-center font-space text-2xl text-accent">
-    Nexus Dashboard Active
-  </div>
-);
+import ChatPage from "../features/chat/ui/ChatPage.jsx";
 
 // --- AUTH GUARD COMPONENTS ---
 
@@ -55,7 +49,7 @@ const router = createBrowserRouter([
     path: "/dashboard",
     element: (
       <ProtectedRoute>
-        <DashboardPlaceholder />
+        <ChatPage/>
       </ProtectedRoute>
     ),
   },

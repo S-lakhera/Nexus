@@ -18,7 +18,8 @@ export default function ChatSidebar() {
     searchQuery,
     setSearchQuery,
     searchResults,
-    isSearchLoading
+    isSearchLoading,
+    unreadCounts
   } = useChat();
 
   // --- LOCAL DOM STATE (UI Only) ---
@@ -153,6 +154,8 @@ export default function ChatSidebar() {
               const chatName = chat.isGroupChat ? chat.chatName : otherUser?.name;
               const isSelected = selectedChat?._id === chat._id;
 
+              const unreadCount = unreadCounts[chat._id]?.length || 0
+
               return (
                 <div
                   key={chat._id}
@@ -179,6 +182,12 @@ export default function ChatSidebar() {
                       </div>
                     </div>
                   </div>
+                  {/* THE GREEN UNREAD BADGE */}
+                  {unreadCount > 0 && (
+                    <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </div>
+                  )}
                 </div>
               );
             })

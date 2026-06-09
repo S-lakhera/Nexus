@@ -47,7 +47,7 @@ export const allMessages = async (req, res) => {
     const messages = await Message.find({ chat: req.params.chatId })
       .populate("sender", "name pic email")
       .populate("chat");
-      
+
     res.json(messages);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -67,7 +67,7 @@ export const markMessageAsRead = async (req, res) => {
     const updatedMessage = await Message.findByIdAndUpdate(
       messageId,
       { $addToSet: { readBy: req.user._id } },
-      { new: true }
+      { "findOneAndUpdate": 'after' }
     )
       .populate("sender", "name pic email")
       .populate("chat")

@@ -39,3 +39,9 @@ export const createGroupChatAPI = async (name, users) => {
   });
   return response.data;
 };
+
+// Mark a message as read in the database
+export const markMessageReadAPI = async (messageId) => {
+  const response = await API.post("/message/read", { messageId });
+  return response.data;
+};

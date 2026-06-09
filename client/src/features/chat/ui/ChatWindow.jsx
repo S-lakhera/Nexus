@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Paperclip, Smile, Send, CheckCheck } from "lucide-react";
+import { MoreVertical, Paperclip, Smile, Send, CheckCheck, Check } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat.js";
 import { useSocket } from "../../../context/SocketContext.jsx"; // Import the socket context
@@ -7,13 +7,13 @@ import { useSocket } from "../../../context/SocketContext.jsx"; // Import the so
 export default function ChatWindow() {
   const { user } = useSelector((state) => state.auth);
   const { selectedChat, messages, isLoadingMessages, sendNewMessage } = useChat();
-  
+
   // 1. Pull socket and the real-time online array
   const { socket, onlineUsers } = useSocket();
-  
+
   const [content, setContent] = useState("");
   const messagesEndRef = useRef(null);
-  
+
   // 2. Typing Indicator States
   const [typing, setTyping] = useState(false); // Am I typing?
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false); // Are they typing?
@@ -48,12 +48,12 @@ export default function ChatWindow() {
 
   const otherUser = !selectedChat?.isGroupChat ? getOtherUser(selectedChat?.users) : null;
   const chatName = selectedChat?.isGroupChat ? selectedChat.chatName : otherUser?.name;
-  const chatAvatar = selectedChat?.isGroupChat 
-    ? `https://api.dicebear.com/7.x/initials/svg?seed=${chatName}` 
+  const chatAvatar = selectedChat?.isGroupChat
+    ? `https://api.dicebear.com/7.x/initials/svg?seed=${chatName}`
     : (otherUser?.pic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chatName}`);
 
   // 3. Determine actual online status
-const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?._id);
+  const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?._id);
 
   // 4. Handle Input & Typing Emissions
   const handleTyping = (e) => {
@@ -83,14 +83,14 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
 
   const handleSend = async () => {
     if (!content.trim()) return;
-    
+
     // Clear typing state immediately on send
     socket.emit("stop typing", selectedChat._id);
     setTyping(false);
     clearTimeout(typingTimeoutRef.current);
 
     const textToSend = content;
-    setContent(""); 
+    setContent("");
     await sendNewMessage(textToSend);
   };
 
@@ -98,13 +98,13 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
 
   return (
     <div className="flex h-screen w-full flex-col bg-[#0F0F11]">
-      
+
       {/* HEADER */}
       <div className="flex items-center justify-between border-b border-border bg-primary/95 px-6 py-4 backdrop-blur">
         <div className="flex items-center gap-4">
           <div className="relative h-10 w-10 rounded-full bg-secondary ring-1 ring-border">
             <img src={chatAvatar} alt="Avatar" className="h-full w-full rounded-full object-cover" />
-            
+
             {/* CONDITIONAL GREEN DOT */}
             {isOnline && (
               <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-primary bg-green-500 transition-all duration-300"></div>
@@ -118,7 +118,7 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
             </p>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <button className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-primary">
             <MoreVertical size={20} />
@@ -130,30 +130,45 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
       <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
         {isLoadingMessages ? (
           <div className="flex h-full items-center justify-center">
-             <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
           </div>
         ) : (
           <div className="flex flex-col space-y-6">
             {messages.map((msg) => {
               const isSelf = msg.sender._id === user._id || msg.sender === user._id;
-              
+
+              // If the readBy array has IDs in it, the message has been read!
+              const isRead = msg.readBy && msg.readBy.length > 0;
+
               return (
                 <div key={msg._id} className={`flex w-full ${isSelf ? "justify-end" : "justify-start"}`}>
                   <div className={`flex max-w-[70%] flex-col gap-1 ${isSelf ? "items-end" : "items-start"}`}>
                     <div className={`relative rounded-2xl px-4 py-2.5 text-sm font-jakarta shadow-sm ${isSelf ? "bg-accent text-zinc-950 rounded-tr-sm" : "border border-border bg-secondary text-primary rounded-tl-sm"}`}>
                       {msg.content}
                     </div>
+
                     <div className="flex items-center gap-1.5 px-1">
                       <span className="text-[10px] text-zinc-500 font-jetbrains">
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      {isSelf && <CheckCheck size={14} className="text-blue-500" />}
+
+                      {/* DYNAMIC TICKS */}
+                      {isSelf && (
+                        msg.status === "sending" ? (
+                          <Check size={14} className="text-zinc-500" />
+                        ) : (
+                          <CheckCheck
+                            size={14}
+                            className={`transition-colors duration-300 ${isRead ? "text-blue-500" : "text-zinc-500"}`}
+                          /> // Double gray/blue ticks for delivered/read
+                        )
+                      )}
                     </div>
                   </div>
                 </div>
               );
             })}
-            
+
             {/* TYPING ANIMATION BUBBLE */}
             {isOtherUserTyping && (
               <div className="flex w-full justify-start">
@@ -166,7 +181,7 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -178,7 +193,7 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
           <button className="p-2 text-zinc-400 transition-colors hover:text-primary">
             <Paperclip size={20} />
           </button>
-          
+
           <div className="relative flex-1">
             <input
               type="text"
@@ -193,7 +208,7 @@ const isOnline = !selectedChat?.isGroupChat && onlineUsers?.includes(otherUser?.
             </button>
           </div>
 
-          <button 
+          <button
             onClick={handleSend}
             disabled={!content.trim()}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-zinc-950 shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:active:scale-100"

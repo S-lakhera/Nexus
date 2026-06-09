@@ -12,7 +12,10 @@ import {
   addRealTimeMessage,
   updateChatListLatestMessage,
   replaceTempMessage,
-  removeMessage
+  removeMessage,
+  incrementUnreadCount,
+  clearUnreadCount,
+  updateMessageReceipt,
 } from "../state/chatSlice.js";
 import {
   fetchChatsAPI,
@@ -20,6 +23,7 @@ import {
   fetchMessagesAPI,
   sendMessageAPI,
   createGroupChatAPI,
+  markMessageReadAPI,
 } from "../api/chat.api.js";
 import { logoutUserAPI, searchUsersAPI } from "../../auth/api/auth.api.js"; // Added search API
 import { logout } from "../../auth/state/authSlice.js";
@@ -29,7 +33,7 @@ export const useChat = () => {
   const { socket } = useSocket();
   const { user } = useSelector((state) => state.auth);
 
-  const { chats, selectedChat, messages, isLoadingChats, isLoadingMessages } = useSelector((state) => state.chat);
+  const { chats, selectedChat, messages, isLoadingChats, isLoadingMessages, unreadCounts } = useSelector((state) => state.chat);
 
   // --- SEARCH STATE & LOGIC ---
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,24 +61,50 @@ export const useChat = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  // --- EXISTING SOCKET LISTENERS ---
+  // --- SOCKET LISTENERS ---
   useEffect(() => {
     if (!socket) return;
-    socket.on("message received", (newMessage) => {
+
+    // 1. INCOMING MESSAGE HANDLER
+    socket.on("message received", async (newMessage) => {
+            
       if (selectedChat && selectedChat._id === newMessage.chat._id) {
+        // SCENARIO A: The user is actively looking at this chat
         dispatch(addRealTimeMessage(newMessage));
-      }
-      dispatch(
-        updateChatListLatestMessage({
+
+        try {
+          // Tell the DB it is read, then emit to the sender!
+          const readData = await markMessageReadAPI(newMessage._id);
+          socket.emit("message read", readData);
+        } catch (error) {
+          console.error("Failed to mark read:", error);
+        }
+
+      } else {
+        // SCENARIO B: The user is somewhere else. Add a notification badge!
+        dispatch(incrementUnreadCount({
           chatId: newMessage.chat._id,
-          lastMessage: newMessage,
-        })
-      );
+          messageId: newMessage._id
+        }));
+        
+      }
+
+      dispatch(updateChatListLatestMessage({ chatId: newMessage.chat._id, lastMessage: newMessage }));
     });
-    return () => socket.off("message received");
+
+    // 2. OUTGOING READ RECEIPT HANDLER (The blue tick trigger)
+    socket.on("receipt updated", (updatedMessage) => {
+      // The other person read your message! Update it in the local array.
+      dispatch(updateMessageReceipt(updatedMessage));
+    });
+
+    return () => {
+      socket.off("message received");
+      socket.off("receipt updated");
+    };
   }, [socket, selectedChat, dispatch]);
 
-  // --- EXISTING ACTIONS ---
+  // --- ACTIONS ---
   const loadChats = async () => {
     try {
       dispatch(fetchChatsStart());
@@ -87,6 +117,18 @@ export const useChat = () => {
 
   const openChat = async (chatData) => {
     dispatch(setSelectedChat(chatData));
+
+    // Clear the unread dot
+    dispatch(clearUnreadCount(chatData._id));
+
+    // If the last message was sent by the OTHER person, tell the backend we read it now!
+    if (chatData.latestMessage && chatData.latestMessage.sender !== user._id) {
+      try {
+        const readData = await markMessageReadAPI(chatData.latestMessage._id);
+        socket?.emit("message read", readData);
+      } catch (error) { console.error(error); }
+    }
+
     try {
       dispatch(fetchMessagesStart());
       const data = await fetchMessagesAPI(chatData._id);
@@ -102,7 +144,7 @@ export const useChat = () => {
       await openChat(chatData);
       await loadChats();
       // Logic handled here: clear the search automatically after selecting a user
-      setSearchQuery(""); 
+      setSearchQuery("");
     } catch (error) {
       console.error("Error accessing chat:", error);
     }
@@ -115,7 +157,7 @@ export const useChat = () => {
     const tempMessage = {
       _id: tempId,
       content,
-      sender: user, 
+      sender: user,
       chat: selectedChat,
       createdAt: new Date().toISOString(),
       status: "sending",
@@ -152,16 +194,16 @@ export const useChat = () => {
   const createNewGroupChat = async (name, selectedUserIds) => {
     try {
       const newGroup = await createGroupChatAPI(name, selectedUserIds);
-      
-      await loadChats(); 
-      
+
+      await loadChats();
+
       // Instantly open the newly created group in the Chat Window
-      dispatch(setSelectedChat(newGroup)); 
-      
+      dispatch(setSelectedChat(newGroup));
+
       return true; // Return true so the UI knows it can close the modal
     } catch (error) {
       console.error("Failed to create group:", error);
-      return false; 
+      return false;
     }
   };
 
@@ -170,12 +212,13 @@ export const useChat = () => {
     chats,
     selectedChat,
     messages,
+    unreadCounts,
     isLoadingChats,
     isLoadingMessages,
-    searchQuery,       
-    setSearchQuery,      
-    searchResults,       
-    isSearchLoading,     
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    isSearchLoading,
     loadChats,
     openChat,
     createOrOpenChat,

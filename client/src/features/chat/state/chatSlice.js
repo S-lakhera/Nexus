@@ -4,6 +4,7 @@ const initialState = {
   chats: [], // Populates the Left Panel
   selectedChat: null, // Determines what the Right Panel shows
   messages: [], // The actual message bubbles
+  unreadCounts: {},
   isLoadingChats: false,
   isLoadingMessages: false,
   error: null,
@@ -48,6 +49,27 @@ const chatSlice = createSlice({
       state.error = action.payload;
     },
 
+    // UNREAD BADGE logic
+    incrementUnreadCount: (state, action) => {
+      const { chatId, messageId } = action.payload;
+
+      // 1. If this chat doesn't have an unread array yet, create an empty one
+      if (!state.unreadCounts[chatId]) {
+        state.unreadCounts[chatId] = [];
+      }
+
+      // 2. The Gatekeeper: Only push the message ID if it isn't already in the array!
+      if (!state.unreadCounts[chatId].includes(messageId)) {
+        state.unreadCounts[chatId].push(messageId);
+      }
+    },
+
+    clearUnreadCount: (state, action) => {
+      const chatId = action.payload;
+      // Reset it to an empty array when they open the chat
+      state.unreadCounts[chatId] = [];
+    },
+
     // --- REAL-TIME: Socket.io Update Handlers ---
     addRealTimeMessage: (state, action) => {
       // Gatekeeper: Check if a message with this exact ID already exists
@@ -70,6 +92,17 @@ const chatSlice = createSlice({
     removeMessage: (state, action) => {
       state.messages = state.messages.filter((m) => m._id !== action.payload);
     },
+
+    // BLUE TICK UPDATER ---
+    updateMessageReceipt: (state, action) => {
+      const updatedMessage = action.payload;
+      // Find the specific message in the active window and update its readBy array
+      const index = state.messages.findIndex((m) => m._id === updatedMessage._id);
+      if (index !== -1) {
+        state.messages[index] = updatedMessage;
+      }
+    },
+
     updateChatListLatestMessage: (state, action) => {
       // Finds the chat in the sidebar and updates its subtext/timestamp
       const { chatId, lastMessage } = action.payload;
@@ -96,7 +129,10 @@ export const {
   addRealTimeMessage,
   updateChatListLatestMessage,
   replaceTempMessage,
-  removeMessage
+  removeMessage,
+  updateMessageReceipt,
+  incrementUnreadCount,
+  clearUnreadCount,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

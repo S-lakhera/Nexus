@@ -1,1 +1,43 @@
-@import 'tailwindcss'
+@import "tailwindcss";
+
+/* 1. Tailwind v4 Theme Configuration */
+@theme {
+  /* Define custom font families */
+  --font-space: "Space Grotesk", sans-serif;
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-jetbrains: "JetBrains Mono", monospace;
+  --font-fira: "Fira Code", monospace;
+
+  /* Bind custom colors to your CSS variables */
+  --color-primary: var(--bg-primary);
+  --color-secondary: var(--bg-secondary);
+  --color-accent: var(--accent-color);
+  --color-border: var(--border-color);
+  
+  --text-color-primary: var(--text-primary);
+}
+
+/* 2. Global Design Tokens (CSS Variables) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f4f6;
+  --text-primary: #111827;
+  --accent-color: #8b5cf6; /* Electric Violet */
+  --border-color: #e5e7eb;
+}
+
+/* Dark Mode Tokens */
+.dark {
+  --bg-primary: #0F0F11;
+  --bg-secondary: #1A1A1E;
+  --text-primary: #f9fafb;
+  --accent-color: #a78bfa; 
+  --border-color: #27272a;
+}
+
+/* 3. Base Elements */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}

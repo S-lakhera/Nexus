@@ -53,6 +53,18 @@ const chatSlice = createSlice({
       // Pushes a newly received message directly into the active array
       state.messages.push(action.payload);
     },
+    // Swaps the temporary message with the real DB document
+    replaceTempMessage: (state, action) => {
+      const { tempId, realMessage } = action.payload;
+      const index = state.messages.findIndex((m) => m._id === tempId);
+      if (index !== -1) {
+        state.messages[index] = realMessage;
+      }
+    },
+    // Removes the temp message if the API call fails
+    removeMessage: (state, action) => {
+      state.messages = state.messages.filter((m) => m._id !== action.payload);
+    },
     updateChatListLatestMessage: (state, action) => {
       // Finds the chat in the sidebar and updates its subtext/timestamp
       const { chatId, lastMessage } = action.payload;
@@ -78,6 +90,8 @@ export const {
   fetchMessagesFailure,
   addRealTimeMessage,
   updateChatListLatestMessage,
+  replaceTempMessage,
+  removeMessage
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

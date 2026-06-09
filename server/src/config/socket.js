@@ -34,8 +34,8 @@ const initializeSocketServer = (httpServer) => {
         })
 
         // 4. NEW MESSAGE: Fast reply 
-        socket.on("new message", (newMessageRecieved) => {
-            let chat = newMessageRecieved.chat;
+        socket.on("new message", (newMessageReceived) => {
+            let chat = newMessageReceived.chat;
 
             if(!chat.users){
                 console.log("chat.users not defined");
@@ -43,19 +43,19 @@ const initializeSocketServer = (httpServer) => {
             }
 
             chat.users.forEach(user => {
-                if(user._id === newMessageRecieved.sender._id) return;
+                if(user._id === newMessageReceived.sender._id) return;
 
-                socket.in(user._id).emit("message recieved", newMessageRecieved)
+                socket.in(user._id).emit("message received", newMessageReceived)
             });
         })
 
-        // 5. READ RECIEPT: Notify the sender that their message is read
+        // 5. READ RECEIPT: Notify the sender that their message is read
         socket.on("message read", (readData) => {
             let chat = readData.chat;
 
             if(!chat.users) return
 
-            socket.in(readData.sender._id).emit("reciept updated", readData)
+            socket.in(readData.sender._id).emit("receipt updated", readData)
         })
 
 

@@ -1,4 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
+import { useSocket } from "../../../context/SocketContext.jsx";
 import {
   fetchChatsStart,
   fetchChatsSuccess,
@@ -9,6 +10,8 @@ import {
   fetchMessagesFailure,
   addRealTimeMessage,
   updateChatListLatestMessage,
+  replaceTempMessage,
+  removeMessage
 } from "../state/chatSlice.js";
 import {
   fetchChatsAPI,
@@ -16,10 +19,14 @@ import {
   fetchMessagesAPI,
   sendMessageAPI,
 } from "../api/chat.api.js";
+import { useEffect } from "react";
 
 export const useChat = () => {
   const dispatch = useDispatch();
-  
+  const { socket } = useSocket()
+
+  const { user } = useSelector((state) => state.auth);
+
   // Pull the current state directly from Redux so the UI can just consume it
   const {
     chats,
@@ -28,6 +35,30 @@ export const useChat = () => {
     isLoadingChats,
     isLoadingMessages,
   } = useSelector((state) => state.chat);
+
+  // Socket Listeners
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listener MUST match backend string exactly
+    socket.on("message received", (newMessage) => {
+
+      if (selectedChat && selectedChat._id === newMessage.chat._id) {
+        dispatch(addRealTimeMessage(newMessage));
+      }
+
+      dispatch(
+        updateChatListLatestMessage({
+          chatId: newMessage.chat._id,
+          lastMessage: newMessage,
+        })
+      );
+    });
+
+    return () => {
+      socket.off("message received");
+    };
+  }, [socket, selectedChat, dispatch]);
 
   // 1. Load the Sidebar Chat List
   const loadChats = async () => {
@@ -63,7 +94,7 @@ export const useChat = () => {
       // Once created/fetched, we open it
       await openChat(chatData);
       // And refresh the sidebar so it appears there
-      await loadChats(); 
+      await loadChats();
     } catch (error) {
       console.error("Error accessing chat:", error);
     }
@@ -73,24 +104,42 @@ export const useChat = () => {
   const sendNewMessage = async (content) => {
     if (!selectedChat || !content.trim()) return;
 
+    // 1. OPTIMISTIC UI: Construct a temporary local message
+    const tempId = `temp-${Date.now()}`;
+    const tempMessage = {
+      _id: tempId,
+      content,
+      sender: user, // The logged-in user from your auth state
+      chat: selectedChat,
+      createdAt: new Date().toISOString(),
+      status: "sending", // We can use this to show a gray 'sending' tick in the UI
+    };
+
+    // 2. Instantly render it on the sender's screen (Zero latency UX!)
+    dispatch(addRealTimeMessage(tempMessage));
+
     try {
-      // Hit the backend
-      const newMessage = await sendMessageAPI(selectedChat._id, content);
-      
-      // Update the active message log instantly
-      dispatch(addRealTimeMessage(newMessage));
-      
-      // Update the sidebar snippet so it shows the latest message text
+      // 3. Perform the actual backend save
+      const realMessage = await sendMessageAPI(selectedChat._id, content);
+
+      // 4. Swap the temp ID for the real MongoDB _id
+      dispatch(replaceTempMessage({ tempId, realMessage }));
+
+      // 5. Update the sidebar
       dispatch(
         updateChatListLatestMessage({
           chatId: selectedChat._id,
-          lastMessage: newMessage,
+          lastMessage: realMessage,
         })
       );
-      
-      return newMessage; // Return it so we can emit it via Socket.io next!
+
+      // 6. Now that data integrity is guaranteed, emit to the receiver!
+      socket.emit("new message", realMessage);
+
     } catch (error) {
       console.error("Failed to send message:", error);
+      // If the Backend fails, remove the fake message so the UI doesn't lie to the user
+      dispatch(removeMessage(tempId));
     }
   };
 

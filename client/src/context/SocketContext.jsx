@@ -1,41 +1,34 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { createContext, useContext, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { socket } from "../services/socket.js";
 
 const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
-  const [socket, setSocket] = useState(null);
+  // Watch the auth state
   const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     if (user) {
-      // 1. Initialize connection (without the query parameter we used earlier)
-      const socketInstance = io("http://localhost:3000");
+      socket.connect();
 
-      setSocket(socketInstance);
-
-      // 2. MATCHING YOUR BACKEND: Wait for connection, then emit the "setup" event
-      socketInstance.on("connect", () => {
-        socketInstance.emit("setup", user);
-      });
-
-      // 3. Optional: Listen for the "connected" confirmation from backend
-      socketInstance.on("connected", () => {
-        console.log("Socket setup complete and connected!");
+      // 2. Setup the personal room once connected
+      socket.on("connect", () => {
+        socket.emit("setup", user);
       });
 
       return () => {
-        socketInstance.close();
+        // Cleanup when the user logs out or the app unmounts
+        socket.off("connect");
+        socket.disconnect(); 
       };
     } else {
-      if (socket) {
-        socket.close();
-        setSocket(null);
-      }
+      // If the user logs out, kill the connection immediately
+      socket.disconnect();
     }
   }, [user]);
 
+  // We pass the imported socket instance down to the rest of the app
   return (
     <SocketContext.Provider value={{ socket }}>
       {children}

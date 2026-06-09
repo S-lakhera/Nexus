@@ -31,7 +31,7 @@ const chatSlice = createSlice({
     setSelectedChat: (state, action) => {
       state.selectedChat = action.payload;
       // Instantly clear old messages when swapping chats to prevent UI ghosting
-      state.messages = []; 
+      state.messages = [];
     },
 
     // --- RIGHT PANEL: Message History Reducers ---
@@ -50,8 +50,13 @@ const chatSlice = createSlice({
 
     // --- REAL-TIME: Socket.io Update Handlers ---
     addRealTimeMessage: (state, action) => {
-      // Pushes a newly received message directly into the active array
-      state.messages.push(action.payload);
+      // Gatekeeper: Check if a message with this exact ID already exists
+      const messageExists = state.messages.some((m) => m._id === action.payload._id);
+
+      // Only push it if it is truly a new message
+      if (!messageExists) {
+        state.messages.push(action.payload);
+      }
     },
     // Swaps the temporary message with the real DB document
     replaceTempMessage: (state, action) => {
@@ -69,7 +74,7 @@ const chatSlice = createSlice({
       // Finds the chat in the sidebar and updates its subtext/timestamp
       const { chatId, lastMessage } = action.payload;
       const chatIndex = state.chats.findIndex((c) => c._id === chatId);
-      
+
       if (chatIndex !== -1) {
         state.chats[chatIndex].latestMessage = lastMessage;
         // Optional: Move this chat to the top of the array

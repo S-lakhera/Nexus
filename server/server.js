@@ -12,7 +12,7 @@ let httpServer = http.createServer(app)
 
 initializeSocketServer(httpServer)
 
-httpServer.listen(port, () => {
+httpServer.listen(3000, () => {
     console.log(`Server is running at ${port}`);
     
 })

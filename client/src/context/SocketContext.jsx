@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { socket } from "../services/socket.js";
+import { useState } from "react";
 
 const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
   // Watch the auth state
   const { user } = useSelector((state) => state.auth);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -17,10 +19,14 @@ export const SocketProvider = ({ children }) => {
         socket.emit("setup", user);
       });
 
+      socket.on("get online users", (usersArray) => {
+        setOnlineUsers(usersArray.map((u) => u.userId));
+      });
+
       return () => {
         // Cleanup when the user logs out or the app unmounts
         socket.off("connect");
-        socket.disconnect(); 
+        socket.disconnect();
       };
     } else {
       // If the user logs out, kill the connection immediately
@@ -30,7 +36,7 @@ export const SocketProvider = ({ children }) => {
 
   // We pass the imported socket instance down to the rest of the app
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket, onlineUsers }}>
       {children}
     </SocketContext.Provider>
   );

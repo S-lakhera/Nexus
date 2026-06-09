@@ -41,3 +41,8 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
+
+::selection {
+  background-color: #8b5cf6; /* Custom purple background */
+  color: #ffffff;            /* White text */
+}

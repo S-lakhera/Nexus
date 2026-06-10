@@ -12,6 +12,8 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({ message: "Please enter all required fields" });
         }
 
+        email = email.toLowerCase().trim();
+
         const userExists = await User.findOne({ email });
 
         if (userExists) {
@@ -53,6 +55,8 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        email = email.toLowerCase().trim();
 
         const user = await User.findOne({ email });
         if (!user) {

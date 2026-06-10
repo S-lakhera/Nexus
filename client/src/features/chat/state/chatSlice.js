@@ -93,13 +93,26 @@ const chatSlice = createSlice({
       state.messages = state.messages.filter((m) => m._id !== action.payload);
     },
 
-    // BLUE TICK UPDATER ---
+    // --- BULK BLUE TICK UPDATER (FIXED) ---
     updateMessageReceipt: (state, action) => {
-      const updatedMessage = action.payload;
-      // Find the specific message in the active window and update its readBy array
-      const index = state.messages.findIndex((m) => m._id === updatedMessage._id);
-      if (index !== -1) {
-        state.messages[index] = updatedMessage;
+      const { chatId, readerId } = action.payload;
+      
+      // Safety check: Only update if the user is currently looking at this specific chat
+      if (state.selectedChat && state.selectedChat._id === chatId) {
+        
+        state.messages.forEach((msg) => {
+          // Smart Gatekeeper: Check if readerId already exists, 
+          // handling BOTH raw strings and populated objects safely!
+          const isAlreadyRead = msg.readBy.some(
+            (reader) => reader === readerId || reader._id === readerId
+          );
+
+          if (!isAlreadyRead) {
+            // Push the ID into the array. Immer (Redux Toolkit) will catch this 
+            // array mutation and force the UI to instantly turn the ticks blue!
+            msg.readBy.push(readerId);
+          }
+        });
       }
     },
 

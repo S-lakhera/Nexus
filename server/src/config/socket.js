@@ -61,13 +61,21 @@ const initializeSocketServer = (httpServer) => {
             });
         })
 
-        // 5. READ RECEIPT: Notify the sender that their message is read
-        socket.on("message read", (readData) => {
-            let chat = readData.chat;
+        // 5. READ RECEIPT: Notify the sender that their messages are read
+        socket.on("message read", ({ chat, readerId }) => {
+            // Safety check to prevent crashes
+            if (!chat || !chat.users) {
+                console.log("Read receipt dropped: chat.users not defined");
+                return;
+            }
 
-            if (!chat.users) return
-
-            socket.in(readData.sender._id).emit("receipt updated", readData)
+            // Loop through the chat users and send the receipt to everyone EXCEPT the person who just read it
+            chat.users.forEach(u => {
+                if (u._id === readerId) return;
+                
+                // Transmit the specific chatId and the readerId to the sender's screen
+                socket.in(u._id).emit("receipt updated", { chatId: chat._id, readerId });
+            });
         })
 
 

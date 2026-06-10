@@ -184,7 +184,7 @@ export default function ChatSidebar() {
                   </div>
                   {/* THE GREEN UNREAD BADGE */}
                   {unreadCount > 0 && (
-                    <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white">
+                    <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-black">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </div>
                   )}

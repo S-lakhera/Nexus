@@ -54,26 +54,25 @@ export const allMessages = async (req, res) => {
   }
 };
 
-// @description     Mark a message as read by the current user
+// @description     Mark ALL unread messages in a chat as read by the current user
 // @route           PUT /api/message/read
-export const markMessageAsRead = async (req, res) => {
-  const { messageId } = req.body;
+export const markMessagesAsRead = async (req, res) => {
+  const { chatId } = req.body;
 
-  if (!messageId) {
-    return res.status(400).json({ message: "messageId required" });
+  if (!chatId) {
+    return res.status(400).json({ message: "chatId required" });
   }
 
   try {
-    const updatedMessage = await Message.findByIdAndUpdate(
-      messageId,
-      { $addToSet: { readBy: req.user._id } },
-      { "findOneAndUpdate": 'after' }
-    )
-      .populate("sender", "name pic email")
-      .populate("chat")
-      .populate("readBy", "name pic email");
+    // Find ALL messages in this chat where the current user is NOT already in the readBy array
+    await Message.updateMany(
+      { chat: chatId, readBy: { $ne: req.user._id } },
+      { $addToSet: { readBy: req.user._id } }
+    );
 
-    res.json(updatedMessage);
+    // We don't need to send back massive populated message objects.
+    // Just send back the confirmation data so the sender's socket knows what to turn blue!
+    res.status(200).json({ chatId, readerId: req.user._id });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

@@ -74,8 +74,8 @@ export const useChat = () => {
 
         try {
           // Tell the DB it is read, then emit to the sender!
-          const readData = await markMessageReadAPI(newMessage._id);
-          socket.emit("message read", readData);
+          await markMessageReadAPI(newMessage.chat._id);
+          socket.emit("message read", { chat: newMessage.chat, readerId: user._id });
         } catch (error) {
           console.error("Failed to mark read:", error);
         }
@@ -94,7 +94,7 @@ export const useChat = () => {
 
     // 2. OUTGOING READ RECEIPT HANDLER (The blue tick trigger)
     socket.on("receipt updated", (updatedMessage) => {
-      // The other person read your message! Update it in the local array.
+      
       dispatch(updateMessageReceipt(updatedMessage));
     });
 
@@ -102,7 +102,7 @@ export const useChat = () => {
       socket.off("message received");
       socket.off("receipt updated");
     };
-  }, [socket, selectedChat, dispatch]);
+  }, [socket, selectedChat, dispatch, user]);
 
   // --- ACTIONS ---
   const loadChats = async () => {
@@ -115,18 +115,18 @@ export const useChat = () => {
     }
   };
 
-  const openChat = async (chatData) => {
+ const openChat = async (chatData) => {
     dispatch(setSelectedChat(chatData));
-
-    // Clear the unread dot
     dispatch(clearUnreadCount(chatData._id));
 
-    // If the last message was sent by the OTHER person, tell the backend we read it now!
-    if (chatData.latestMessage && chatData.latestMessage.sender !== user._id) {
+    const latestMessageSenderId = chatData.latestMessage?.sender?._id || chatData.latestMessage?.sender;
+    if (chatData.latestMessage && latestMessageSenderId !== user._id) {
       try {
-        const readData = await markMessageReadAPI(chatData.latestMessage._id);
-        socket?.emit("message read", readData);
-      } catch (error) { console.error(error); }
+        await markMessageReadAPI(chatData._id);
+        socket?.emit("message read", { chat: chatData, readerId: user._id });
+      } catch (error) { 
+        console.error("Failed to mark chat as read:", error); 
+      }
     }
 
     try {

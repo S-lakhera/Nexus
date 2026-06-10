@@ -40,8 +40,8 @@ export const createGroupChatAPI = async (name, users) => {
   return response.data;
 };
 
-// Mark a message as read in the database
-export const markMessageReadAPI = async (messageId) => {
-  const response = await API.post("/message/read", { messageId });
+// Send the Chat ID to mark the entire room as read
+export const markMessageReadAPI = async (chatId) => {
+  const response = await API.put("/message/read", { chatId });
   return response.data;
 };

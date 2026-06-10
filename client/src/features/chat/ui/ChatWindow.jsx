@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Paperclip, Smile, Send, CheckCheck, Check } from "lucide-react";
+import { MoreVertical, Paperclip, Smile, Send, CheckCheck, Check, Info } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat.js";
-import { useSocket } from "../../../context/SocketContext.jsx"; // Import the socket context
+import { useSocket } from "../../../context/SocketContext.jsx";
+import GroupInfoModal from "./GroupInfoModal.jsx";
 
 export default function ChatWindow() {
   const { user } = useSelector((state) => state.auth);
@@ -18,6 +19,8 @@ export default function ChatWindow() {
   const [typing, setTyping] = useState(false); // Am I typing?
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false); // Are they typing?
   const typingTimeoutRef = useRef(null); // Reference to clear the timeout
+
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
 
   // Join the chat room & listen for typing events
   useEffect(() => {
@@ -101,28 +104,40 @@ export default function ChatWindow() {
 
       {/* HEADER */}
       <div className="flex items-center justify-between border-b border-border bg-primary/95 px-6 py-4 backdrop-blur">
-        <div className="flex items-center gap-4">
+        <div
+          className={`flex items-center gap-4 ${selectedChat.isGroupChat ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+          onClick={() => selectedChat.isGroupChat && setIsGroupInfoOpen(true)}
+        >
+          {/* Avatar Area */}
           <div className="relative h-10 w-10 rounded-full bg-secondary ring-1 ring-border">
             <img src={chatAvatar} alt="Avatar" className="h-full w-full rounded-full object-cover" />
-
-            {/* CONDITIONAL GREEN DOT */}
             {isOnline && (
               <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-primary bg-green-500 transition-all duration-300"></div>
             )}
           </div>
+          {/* Name Area */}
           <div>
             <h2 className="text-base font-semibold font-space text-primary">{chatName}</h2>
-            {/* CONDITIONAL SUBTEXT */}
             <p className={`text-xs font-medium font-jakarta ${isOnline ? "text-accent" : "text-zinc-500"}`}>
-              {selectedChat.isGroupChat ? "Group Chat" : (isOnline ? "Online" : "Offline")}
+              {selectedChat.isGroupChat ? `${selectedChat.users.length} participants` : (isOnline ? "Online" : "Offline")}
             </p>
           </div>
         </div>
 
+        {/* Header Actions */}
         <div className="flex gap-2">
-          <button className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-primary">
+          {/* NEW: Info Button for Groups */}
+          {selectedChat.isGroupChat && (
+            <button
+              onClick={() => setIsGroupInfoOpen(true)}
+              className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-accent"
+            >
+              <Info size={20} />
+            </button>
+          )}
+          {/* <button className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-secondary hover:text-primary">
             <MoreVertical size={20} />
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -217,7 +232,11 @@ export default function ChatWindow() {
           </button>
         </div>
       </div>
-
+      <GroupInfoModal
+        isOpen={isGroupInfoOpen}
+        onClose={() => setIsGroupInfoOpen(false)}
+        chat={selectedChat}
+      />
     </div>
   );
 }

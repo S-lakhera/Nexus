@@ -45,3 +45,20 @@ export const markMessageReadAPI = async (chatId) => {
   const response = await API.put("/message/read", { chatId });
   return response.data;
 };
+
+// --- GROUP MANAGEMENT ENDPOINTS ---
+
+export const renameGroupAPI = async (chatId, chatName) => {
+  const response = await API.put("/chat/rename", { chatId, chatName });
+  return response.data;
+};
+
+export const removeFromGroupAPI = async (chatId, userId) => {
+  const response = await API.put("/chat/groupremove", { chatId, userId });
+  return response.data;
+};
+
+export const addToGroupAPI = async (chatId, userId) => {
+  const response = await API.put("/chat/groupadd", { chatId, userId });
+  return response.data;
+};

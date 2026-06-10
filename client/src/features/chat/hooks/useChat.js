@@ -16,6 +16,7 @@ import {
   incrementUnreadCount,
   clearUnreadCount,
   updateMessageReceipt,
+  updateCurrentChat
 } from "../state/chatSlice.js";
 import {
   fetchChatsAPI,
@@ -24,6 +25,9 @@ import {
   sendMessageAPI,
   createGroupChatAPI,
   markMessageReadAPI,
+  renameGroupAPI,
+  removeFromGroupAPI,
+  addToGroupAPI
 } from "../api/chat.api.js";
 import { logoutUserAPI, searchUsersAPI } from "../../auth/api/auth.api.js"; // Added search API
 import { logout } from "../../auth/state/authSlice.js";
@@ -67,7 +71,7 @@ export const useChat = () => {
 
     // 1. INCOMING MESSAGE HANDLER
     socket.on("message received", async (newMessage) => {
-            
+
       if (selectedChat && selectedChat._id === newMessage.chat._id) {
         // SCENARIO A: The user is actively looking at this chat
         dispatch(addRealTimeMessage(newMessage));
@@ -86,7 +90,7 @@ export const useChat = () => {
           chatId: newMessage.chat._id,
           messageId: newMessage._id
         }));
-        
+
       }
 
       dispatch(updateChatListLatestMessage({ chatId: newMessage.chat._id, lastMessage: newMessage }));
@@ -94,7 +98,7 @@ export const useChat = () => {
 
     // 2. OUTGOING READ RECEIPT HANDLER (The blue tick trigger)
     socket.on("receipt updated", (updatedMessage) => {
-      
+
       dispatch(updateMessageReceipt(updatedMessage));
     });
 
@@ -115,7 +119,7 @@ export const useChat = () => {
     }
   };
 
- const openChat = async (chatData) => {
+  const openChat = async (chatData) => {
     dispatch(setSelectedChat(chatData));
     dispatch(clearUnreadCount(chatData._id));
 
@@ -124,8 +128,8 @@ export const useChat = () => {
       try {
         await markMessageReadAPI(chatData._id);
         socket?.emit("message read", { chat: chatData, readerId: user._id });
-      } catch (error) { 
-        console.error("Failed to mark chat as read:", error); 
+      } catch (error) {
+        console.error("Failed to mark chat as read:", error);
       }
     }
 
@@ -207,6 +211,46 @@ export const useChat = () => {
     }
   };
 
+  const renameGroup = async (chatId, newName) => {
+    try {
+      const updatedChat = await renameGroupAPI(chatId, newName);
+      dispatch(updateCurrentChat(updatedChat));
+      return true;
+    } catch (error) {
+      console.error("Rename failed:", error);
+      return false;
+    }
+  };
+
+  const addUserToGroup = async (chatId, userIdToAdd) => {
+    try {
+      const updatedChat = await addToGroupAPI(chatId, userIdToAdd);
+      dispatch(updateCurrentChat(updatedChat));
+      return true;
+    } catch (error) {
+      console.error("Add user failed:", error);
+      return false;
+    }
+  };
+
+  const removeUserFromGroup = async (chatId, userIdToRemove) => {
+    try {
+      const updatedChat = await removeFromGroupAPI(chatId, userIdToRemove);
+
+      // EDGE CASE: If the logged-in user just left the group themselves!
+      if (userIdToRemove === user._id) {
+        dispatch(setSelectedChat(null)); // Close the window
+        loadChats(); // Refresh the sidebar to remove the group
+      } else {
+        dispatch(updateCurrentChat(updatedChat)); // Otherwise just update the modal
+      }
+      return true;
+    } catch (error) {
+      console.error("Remove user failed:", error);
+      return false;
+    }
+  };
+
 
   return {
     chats,
@@ -224,6 +268,9 @@ export const useChat = () => {
     createOrOpenChat,
     sendNewMessage,
     handleLogout,
-    createNewGroupChat
+    createNewGroupChat,
+    renameGroup,
+    addUserToGroup,
+    removeUserFromGroup
   };
 };

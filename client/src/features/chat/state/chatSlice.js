@@ -128,6 +128,20 @@ const chatSlice = createSlice({
         state.chats.unshift(updatedChat);
       }
     },
+
+    // Instantly update the UI when a group's details change
+    updateCurrentChat: (state, action) => {
+      const updatedChat = action.payload;
+      
+      // 1. Update the active window
+      state.selectedChat = updatedChat;
+      
+      // 2. Update the sidebar list so the new name/member count shows up instantly
+      const index = state.chats.findIndex((c) => c._id === updatedChat._id);
+      if (index !== -1) {
+        state.chats[index] = updatedChat;
+      }
+    },
   },
 });
 
@@ -146,6 +160,7 @@ export const {
   updateMessageReceipt,
   incrementUnreadCount,
   clearUnreadCount,
+  updateCurrentChat
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

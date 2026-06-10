@@ -110,7 +110,7 @@ export default function ChatSidebar() {
       </div>
 
       {/* 3. List Section */}
-      <div className="flex-1 overflow-y-auto px-3 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto px-3 scrollbar-hide">
         {searchQuery.trim() ? (
           isSearchLoading ? (
             <div className="flex items-center justify-center py-10">

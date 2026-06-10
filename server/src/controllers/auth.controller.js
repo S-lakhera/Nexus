@@ -6,7 +6,7 @@ import { generateAccessToken, generateRefreshToken } from "../utils/generateToke
 // @route           POST /api/user
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password, pic } = req.body;
+        let { name, email, password, pic } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Please enter all required fields" });
@@ -54,7 +54,7 @@ export const registerUser = async (req, res) => {
 // @route           POST /api/auth/login
 export const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        let { email, password } = req.body;
 
         email = email.toLowerCase().trim();
 
